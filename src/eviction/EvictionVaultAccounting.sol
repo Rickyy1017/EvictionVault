@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
-import "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
+import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
+import {MerkleProof} from "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
 
 import {EvictionVaultStorage} from "./EvictionVaultStorage.sol";
 
@@ -28,7 +28,7 @@ abstract contract EvictionVaultAccounting is EvictionVaultStorage {
     function claim(bytes32[] calldata proof, uint256 amount) external nonReentrant whenNotPaused {
         if (claimed[msg.sender]) revert AlreadyClaimed();
 
-        bytes32 leaf = keccak256(abi.encodePacked(msg.sender, amount));
+        bytes32 leaf = _leafHash(msg.sender, amount);
         bytes32 computed = MerkleProof.processProof(proof, leaf);
         if (computed != merkleRoot) revert InvalidMerkleProof();
         if (totalVaultValue < amount) revert InsufficientBalance();
@@ -48,5 +48,13 @@ abstract contract EvictionVaultAccounting is EvictionVaultStorage {
         bytes memory signature
     ) external pure returns (bool) {
         return ECDSA.recover(messageHash, signature) == signer;
+    }
+
+    function _leafHash(address account, uint256 amount) internal pure returns (bytes32 leaf) {
+        assembly {
+            mstore(0x00, shl(96, account))
+            mstore(0x14, amount)
+            leaf := keccak256(0x00, 0x34)
+        }
     }
 }

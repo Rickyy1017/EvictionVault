@@ -67,7 +67,7 @@ abstract contract EvictionVaultGovernance is EvictionVaultStorage {
         emit Unpaused();
     }
 
-    function emergencyWithdrawAll(address to) external onlyVault whenPaused nonReentrant {
+    function emergencyWithdrawAll(address to) external onlyVault whenPaused {
         uint256 amount = address(this).balance;
         totalVaultValue = 0;
 

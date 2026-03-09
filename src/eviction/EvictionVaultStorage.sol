@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
 abstract contract EvictionVaultStorage is ReentrancyGuard {
     struct Transaction {
@@ -65,28 +65,48 @@ abstract contract EvictionVaultStorage is ReentrancyGuard {
     error OnlyVault();
 
     modifier onlyOwner() {
-        if (!isOwner[msg.sender]) revert NotOwner();
+        _onlyOwner();
         _;
     }
 
     modifier onlyVault() {
-        if (msg.sender != address(this)) revert OnlyVault();
+        _onlyVault();
         _;
     }
 
     modifier whenNotPaused() {
-        if (paused) revert VaultPaused();
+        _whenNotPaused();
         _;
     }
 
     modifier whenPaused() {
-        if (!paused) revert VaultNotPaused();
+        _whenPaused();
         _;
     }
 
     modifier txExists(uint256 txId) {
-        if (txId >= txCount) revert InvalidTransaction();
+        _txExists(txId);
         _;
+    }
+
+    function _onlyOwner() internal view {
+        if (!isOwner[msg.sender]) revert NotOwner();
+    }
+
+    function _onlyVault() internal view {
+        if (msg.sender != address(this)) revert OnlyVault();
+    }
+
+    function _whenNotPaused() internal view {
+        if (paused) revert VaultPaused();
+    }
+
+    function _whenPaused() internal view {
+        if (!paused) revert VaultNotPaused();
+    }
+
+    function _txExists(uint256 txId) internal view {
+        if (txId >= txCount) revert InvalidTransaction();
     }
 
     function _initializeOwners(address[] memory _owners, uint256 _threshold) internal {

@@ -22,7 +22,7 @@ This repository now contains a modularized and hardened `EvictionVault` implemen
 - Root updates now require multisig proposal + threshold confirmations + timelock + execution.
 
 2. `emergencyWithdrawAll` public drain
-- Fixed by changing to `emergencyWithdrawAll(address to)` with `onlyVault` + `whenPaused` + `nonReentrant`.
+- Fixed by changing to `emergencyWithdrawAll(address to)` with `onlyVault` + `whenPaused`.
 - Can only execute through timelocked multisig governance flow.
 
 3. `pause` / `unpause` single-owner control
@@ -61,3 +61,4 @@ Current status after refactor:
 - Monolith removed in practice (logic split across dedicated modules).
 - Contract compiles cleanly.
 - Positive tests pass.
+
