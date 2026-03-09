@@ -1,67 +1,63 @@
-## Foundry
+# Eviction Vault (Hardened, Phase 1 Day 1)
 
-**Foundry is a blazing fast, portable and modular toolkit for Ethereum application development written in Rust.**
+This repository now contains a modularized and hardened `EvictionVault` implementation.
 
-Foundry consists of:
+## Project Structure
 
-- **Forge**: Ethereum testing framework (like Truffle, Hardhat and DappTools).
-- **Cast**: Swiss army knife for interacting with EVM smart contracts, sending transactions and getting chain data.
-- **Anvil**: Local Ethereum node, akin to Ganache, Hardhat Network.
-- **Chisel**: Fast, utilitarian, and verbose solidity REPL.
+- `src/EvictionVault.sol`
+  - Composition root + constructor + `receive()`.
+- `src/eviction/EvictionVaultStorage.sol`
+  - Shared storage, events, errors, modifiers, owner initialization, and owner getter.
+- `src/eviction/EvictionVaultGovernance.sol`
+  - Multisig transaction lifecycle, timelock execution, governance actions (`setMerkleRoot`, `pause`, `unpause`, `emergencyWithdrawAll`).
+- `src/eviction/EvictionVaultAccounting.sol`
+  - User funds flow (`deposit`, `withdraw`, `claim`) and signature verification.
+- `test/EvictionVault.t.sol`
+  - Positive-path test suite (6 tests).
 
-## Documentation
+## Critical Fixes Implemented
 
-https://book.getfoundry.sh/
+1. `setMerkleRoot` callable by anyone
+- Fixed by restricting to `onlyVault`.
+- Root updates now require multisig proposal + threshold confirmations + timelock + execution.
 
-## Usage
+2. `emergencyWithdrawAll` public drain
+- Fixed by changing to `emergencyWithdrawAll(address to)` with `onlyVault` + `whenPaused` + `nonReentrant`.
+- Can only execute through timelocked multisig governance flow.
 
-### Build
+3. `pause` / `unpause` single-owner control
+- Fixed by changing both to `onlyVault`.
+- Both actions require threshold-based multisig and timelock execution.
 
-```shell
-$ forge build
+4. `receive()` uses `tx.origin`
+- Fixed by crediting `balances[msg.sender]` instead of `balances[tx.origin]`.
+
+5. `withdraw` and `claim` use `.transfer`
+- Fixed by switching to low-level `.call{value: amount}("")` and success checks.
+- Added `nonReentrant` for payout paths.
+
+6. Timelock execution hardening
+- Enforced `txExists` checks.
+- Enforced `executionTime != 0` and `block.timestamp >= executionTime` before execute.
+- Ensured `executionTime` is set for threshold-1 submissions and for threshold attainment in confirmations.
+
+## Additional Safety Improvements
+
+- Constructor owner/threshold validation:
+  - no zero owners
+  - no duplicate owners
+  - `threshold` must be within `1..owners.length`
+- Custom errors for tighter revert semantics.
+- `getOwners()` view helper.
+
+## Verification Commands
+
+```bash
+forge build
+forge test
 ```
 
-### Test
-
-```shell
-$ forge test
-```
-
-### Format
-
-```shell
-$ forge fmt
-```
-
-### Gas Snapshots
-
-```shell
-$ forge snapshot
-```
-
-### Anvil
-
-```shell
-$ anvil
-```
-
-### Deploy
-
-```shell
-$ forge script script/Counter.s.sol:CounterScript --rpc-url <your_rpc_url> --private-key <your_private_key>
-```
-
-### Cast
-
-```shell
-$ cast <subcommand>
-```
-
-### Help
-
-```shell
-$ forge --help
-$ anvil --help
-$ cast --help
-```
-# EvictionVault
+Current status after refactor:
+- Monolith removed in practice (logic split across dedicated modules).
+- Contract compiles cleanly.
+- Positive tests pass.
