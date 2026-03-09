@@ -67,6 +67,11 @@ abstract contract EvictionVaultGovernance is EvictionVaultStorage {
         emit Unpaused();
     }
 
+    // function assignWhoWithdraws(address uint) public {
+    //     require(Withdrawal[NotOwner], "cant withdaw");
+
+    // }
+
     function emergencyWithdrawAll(address to) external onlyVault whenPaused {
         uint256 amount = address(this).balance;
         totalVaultValue = 0;
@@ -76,4 +81,5 @@ abstract contract EvictionVaultGovernance is EvictionVaultStorage {
 
         emit EmergencyWithdraw(to, amount);
     }
+
 }
